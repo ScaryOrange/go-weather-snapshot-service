@@ -1,4 +1,4 @@
-# Wether-Snapshot-Service
+# Weather-Snapshot-Service
 
 ## Назначение
 
