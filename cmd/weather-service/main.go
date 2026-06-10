@@ -1,62 +1,46 @@
 package main
 
 import (
-	_ "context"
+	"context"
 	_ "fmt"
 	"log"
-	"net/http"
 	_ "os/signal"
 	_ "syscall"
+	"time"
 	_ "time"
 
+	inmemorycache "github.com/ScaryOrange/go-weather-snapshot-service/internal/cache/in-memory-cache"
 	"github.com/ScaryOrange/go-weather-snapshot-service/internal/config"
 	myHttp "github.com/ScaryOrange/go-weather-snapshot-service/internal/http"
+	myMetrics "github.com/ScaryOrange/go-weather-snapshot-service/internal/metrics"
+	"github.com/ScaryOrange/go-weather-snapshot-service/internal/storage/postgres"
 	"github.com/ScaryOrange/go-weather-snapshot-service/internal/weather"
-	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
-	router := chi.NewRouter()
+	ctx := context.Background()
+
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("config error: %v", err)
-		return
 	}
 
 	provider := weather.NewOpenMeteoClient(cfg.GeocodingEndpoint, cfg.ForecastEndpoint)
-	_ = provider
-	router.Get("/api/v1/health", myHttp.Health)
-	if err := http.ListenAndServe(":"+cfg.Port, router); err != nil {
-		log.Fatalf("server error: %v", err)
+
+	dbPool, err := pgxpool.New(ctx, cfg.DB)
+	if err != nil {
+		log.Fatalf("Database connetcion error: %v", err)
 	}
+	defer dbPool.Close()
+	storage := postgres.NewStorage(dbPool)
 
-	// ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	// defer stop()
+	cache := inmemorycache.NewMemoryCache(time.Duration(cfg.TTL) * time.Minute)
 
-	// cfg, _ := config.Load()
-	// provider := weather.NewOpenMeteoClient(cfg.GeocodingEndpoint, cfg.ForecastEndpoint)
-	// fmt.Print(provider)
+	weatherMetrics := myMetrics.NewWeatherMetrics()
 
-	// router := chi.NewRouter()
-	// router.Get("/api/v1/health", myHttp.Health)
+	handler := myHttp.NewHandler(provider, storage, cache, weatherMetrics)
 
-	// server := http.Server{Addr: ":" + cfg.Port, Handler: router}
-
-	// go func() {
-	// 	log.Println("HTTP server listening on :" + cfg.Port)
-	// 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-	// 		log.Fatalf("server error: %v", err)
-	// 	}
-	// }()
-
-	// <-ctx.Done()
-	// log.Println("Shutdown signal")
-
-	// shutdownCtx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-
-	// defer cancel()
-	// if err := server.Shutdown(shutdownCtx); err != nil {
-	// 	log.Printf("HTTP server shutdown error: %v", err)
-	// }
+	myHttp.RunServer(cfg.Port, handler)
 
 }

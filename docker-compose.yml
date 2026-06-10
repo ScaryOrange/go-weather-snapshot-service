@@ -3,8 +3,8 @@ services:
     image: postgres:latest
     container_name: weather-postgres
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+      POSTGRES_USER: weather
+      POSTGRES_PASSWORD: secret
       POSTGRES_DB: weather
     ports:
       - "5432:5432"

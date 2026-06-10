@@ -8,6 +8,7 @@ type Config struct {
 	DB                string `env:"DB"`
 	GeocodingEndpoint string `env:"GEOCODING_ENDPOINT"`
 	ForecastEndpoint  string `env:"FORECAST_ENDPOINT"`
+	TTL               int64  `env:"TTL"`
 }
 
 func Load() (*Config, error) {

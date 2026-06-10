@@ -19,7 +19,7 @@ func NewStorage(db *pgxpool.Pool) *storage {
 
 func (s *storage) Save(ctx context.Context, snapshot weather.WeatherSnapshot) error {
 	sqlE := ` 
-	INSERT INTO weather (id, city, provider, temperature_celsius, wind_speed, observed_at, raw_payload, created_at)
+	INSERT INTO weather_snapshot (id, city, provider, temperature_celsius, wind_speed, observed_at, raw_payload, created_at)
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8)		 
 	`
 	id := uuid.New()
@@ -48,7 +48,7 @@ func (s *storage) History(ctx context.Context, city string, limit int) ([]weathe
 	}
 
 	sqlQ := `
-	SELECT city, provider, temperature_celsius, wind_speed, observed_at, raw_payload FROM weather
+	SELECT city, provider, temperature_celsius, wind_speed, observed_at, raw_payload FROM weather_snapshot
 	WHERE city = $1
 	ORDER BY created_at DESC
 	LIMIT $2

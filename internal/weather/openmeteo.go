@@ -127,13 +127,19 @@ func (omc *openMeteoClient) Current(ctx context.Context, city string) (WeatherSn
 		return WeatherSnapshot{}, err
 	}
 
+	observedAt, err := time.Parse("2006-01-02T15:04", response.CurrentWeather.Time)
+	if err != nil {
+		return WeatherSnapshot{}, err
+	}
+
 	snapshot := WeatherSnapshot{
 		City:               CityNormalize(city),
 		Provider:           "open-meteo",
 		TemperatureCelsius: response.CurrentWeather.Temperature,
 		WindSpeed:          response.CurrentWeather.WindSpeed,
-		ObservedAt:         response.CurrentWeather.Time,
+		ObservedAt:         observedAt,
 		RawPayload:         rawResponse,
+		Cached:             false,
 	}
 
 	return snapshot, nil
